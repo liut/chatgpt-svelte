@@ -3,19 +3,33 @@
   import ChatMessage from '$lib/components/ChatMessage.svelte';
   import Input from '$lib/components/Input.svelte';
   import { chatMessages, answer } from '$lib/stores/chat-messages';
+  import * as api from '$lib/api';
 
+  let actId = '';
   let query = '';
 
   const handleSubmit = async () => {
     answer.set('...');
-    await chatMessages.set(query);
+    await chatMessages.set(query, actId);
     query = '';
+  };
+
+  let getMe = () => {
+    return api.me();
   };
 </script>
 
 <section class="flex max-w-6xl w-full pt-4 justify-center">
   <div class="flex flex-col gap-2">
-    <ChatHistory />
+    <ChatHistory bind:actId={actId} />
+    <div class="p-4">
+      {#await getMe()}
+        <!-- TODO: user is pending -->
+      {:then user}
+        <!-- TODO: user was fulfilled -->
+        {user.name}
+      {/await}
+    </div>
   </div>
 
   <div class="flex flex-col w-full px-8 items-center gap-2">

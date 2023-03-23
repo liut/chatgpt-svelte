@@ -6,6 +6,7 @@ export const chatHistorySubscription = writable();
 
 const setLocalHistory = <T>(history: T) =>
   localStorage.setItem('chatHistory', JSON.stringify(history));
+
 const getLocalHistory = () => JSON.parse(localStorage.getItem('chatHistory') || '{}');
 
 export const chatHistory = derived(chatMessages, ($chatMessages) => {
@@ -17,13 +18,17 @@ export const chatHistory = derived(chatMessages, ($chatMessages) => {
 
   if (history && $chatMessages.messages.length === 1) return JSON.parse(history);
 
-  const key = $chatMessages.messages[1].content; //The second message is the query
-  const value = $chatMessages.messages;
+  const chatHistory = getLocalHistory();
+
+  if (!$chatMessages.chatId) {
+    return chatHistory;
+  }
+
+  const key = $chatMessages.chatId;
+  const value = $chatMessages;
   const obj = { [key]: value };
 
   if (!history) setLocalHistory(obj);
-
-  const chatHistory = getLocalHistory();
 
   if (chatHistory) {
     chatHistory[key] = value;
@@ -35,7 +40,7 @@ export const chatHistory = derived(chatMessages, ($chatMessages) => {
   return null;
 });
 
-export const filterHistory = (key: string) => {
+export const trashHistory = (key: string) => {
   const history = getLocalHistory();
   delete history[key];
   setLocalHistory(history);
@@ -44,10 +49,11 @@ export const filterHistory = (key: string) => {
 
 const getHistory = (key: string) => getLocalHistory()[key]; //Returns the history for a given key
 
-export const loadMessages = (query: string) => {
+export const loadMessages = (key: string) => {
   if (get(chatMessages).chatState !== 'idle') return; //Prevents switching between messages while loading
-  if (!query) return;
+  if (!key) return;
 
-  const newMessages = getHistory(query);
-  chatMessages.replace({ messages: newMessages, chatState: 'idle' });
+  const newMessages = getHistory(key);
+  newMessages.chatState = 'idle';
+  chatMessages.replace(newMessages);
 };
